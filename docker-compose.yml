@@ -1,0 +1,43 @@
+version: '3'
+services:
+
+  # Cassandra database
+  cassandra:
+    hostname: cassandra
+    image: 'bitnami/cassandra:3'
+    ports:
+      - '7000:7000'
+      - '9042:9042'
+    networks:
+      - backend
+  # Port Domain Service
+  port-domain-service:
+    hostname: port-domain-service
+    build: ./port-domain-service
+    ports:
+      - "50051:50051"
+    depends_on:
+      - cassandra
+    environment:
+      APP_ENV: "prod"
+      CASSANDRA_CLUSTER_URL: cassandra
+      WAIT_HOSTS: cassandra:9042, cassandra:7000
+    networks:
+      - backend
+
+  # Client API Service
+  client-api:
+    hostname: client-api
+    build: ./client-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - port-domain-service
+    environment:
+      PORT_DOMAIN_SERVICE_GRPC_URL: port-domain-service:50051    
+      APP_ENV: "prod"
+      WAIT_HOSTS: port-domain-service:50051
+    networks: 
+      - backend
+networks:
+  backend: 
