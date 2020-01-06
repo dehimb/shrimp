@@ -8,7 +8,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"sync"
 
 	pb "github.com/dehimb/shrimp/proto/port"
 	"github.com/gocql/gocql"
@@ -24,7 +23,6 @@ const (
 )
 
 type PortService struct {
-	sync.Mutex
 	grpcServer *grpc.Server
 	dbSession  *gocql.Session
 	logger     *logrus.Logger
@@ -87,8 +85,6 @@ func (service *PortService) GetPort(ctx context.Context, portID *pb.PortID) (*pb
 // Establish connection to database and start grpc server
 func StartPortDomainService(ctx context.Context, logger *logrus.Logger) {
 	service := &PortService{logger: logger}
-	// Lock service intil initialization done
-	service.Lock()
 	// Set-up our gRPC server.
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -110,7 +106,6 @@ func StartPortDomainService(ctx context.Context, logger *logrus.Logger) {
 	log.Println("Started grpc on port:", port)
 
 	service.setupDatabase()
-	service.Unlock()
 	waitForShutdown(ctx, service, logger)
 }
 
