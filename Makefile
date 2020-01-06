@@ -4,9 +4,9 @@ build:
 	# install dependencies
 	go mod download
 	# build portdomainservice
-	GOOS=linux GOARCH=amd64 go build -o portdomainservice/portdomainservice portdomainservice/cmd/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o portdomainservice/portdomainservice portdomainservice/cmd/main.go
 	# build clientapi
-	GOOS=linux GOARCH=amd64 go build -o clientapi/clientapi clientapi/cmd/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o clientapi/clientapi clientapi/cmd/main.go
 test:
 	go test `go list ./... | grep -v -e "proto" -e "cmd"`
 up: 
