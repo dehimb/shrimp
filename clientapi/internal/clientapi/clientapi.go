@@ -16,6 +16,7 @@ const (
 func StartServer(ctx context.Context, logger *logrus.Logger) {
 	handler := &handler{
 		router: mux.NewRouter(),
+		dialer: &GRPCDialer{},
 		logger: logger,
 	}
 	s := &http.Server{

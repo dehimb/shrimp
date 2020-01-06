@@ -5,12 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 
+	"github.com/dehimb/shrimp/clientapi/internal/clientapi"
 	"github.com/dehimb/shrimp/proto/port"
-	pb "github.com/dehimb/shrimp/proto/port"
-	"google.golang.org/grpc"
 )
+
+type Loader struct {
+	dialer clientapi.Dialer
+}
 
 type Results struct {
 	Count uint
@@ -30,29 +33,28 @@ type Item struct {
 	Coordinates []float32
 }
 
-// Load method read data from given file and pass it to ports domain service
-func Load(ctx context.Context, file *os.File) (*Results, error) {
-	// close file when all done
-	defer file.Close()
-	// Set up a connection to port domain service.
-	conn, err := grpc.Dial(os.Getenv("PORT_DOMAIN_SERVICE_GRPC_URL"), grpc.WithInsecure())
+func New(ctx context.Context) (*Loader, error) {
+	loader := &Loader{
+		dialer: &clientapi.GRPCDialer{},
+	}
+	err := loader.dialer.Dial(ctx)
 	if err != nil {
 		return nil, err
 	}
-	// close connection when all done
-	defer conn.Close()
-	// register grpc client
-	client := pb.NewPortDomainServiceClient(conn)
+	return loader, nil
+}
 
+// Load method read data from given file and pass it to ports domain service
+func (l *Loader) Load(ctx context.Context, file io.Reader) (*Results, error) {
 	// use decoder to read file by parts for minimizing memory consumption
 	decoder := json.NewDecoder(file)
 	// reading first "{"
-	_, err = decoder.Token()
+	_, err := decoder.Token()
 	if err != nil {
 		return nil, err
 	}
 	results := &Results{}
-	// read file intil the end
+	// read file until the end
 	for decoder.More() {
 		// read port id
 		key, err := decoder.Token()
@@ -88,8 +90,8 @@ func Load(ctx context.Context, file *os.File) (*Results, error) {
 			Region:   item.Regions,
 			Unlocs:   item.Unlocs,
 		}
-		// call port save via rpc
-		_, err = client.AddPort(ctx, port)
+		// call port save via grpc
+		_, err = l.dialer.GetClient().AddPort(ctx, port)
 		if err != nil {
 			return nil, err
 		}

@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dehimb/shrimp/client-api/internal/clientapi"
-	"github.com/dehimb/shrimp/client-api/internal/portsloader"
+	"github.com/dehimb/shrimp/clientapi/internal/clientapi"
+	"github.com/dehimb/shrimp/clientapi/internal/portsloader"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,10 +47,15 @@ func loadPortsData(ctx context.Context, logger *logrus.Logger) {
 	}
 
 	logger.Infoln("Updating ports database")
-	results, err := portsloader.Load(ctx, file)
+	loader, err := portsloader.New(ctx)
+	if err != nil {
+		logger.Fatal("Can't init ports loader: ", err)
+	}
+	results, err := loader.Load(ctx, file)
 	if err != nil {
 		logger.Warnln("Error when updating ports data: ", err)
 	}
+	file.Close()
 	if results != nil {
 		logger.Infof("Ports data updated: %d records", results.Count)
 	}

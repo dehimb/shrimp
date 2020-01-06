@@ -11,9 +11,9 @@ services:
     networks:
       - backend
   # Port Domain Service
-  port-domain-service:
-    hostname: port-domain-service
-    build: ./port-domain-service
+  portdomainservice:
+    hostname: portdomainservice
+    build: ./portdomainservice
     ports:
       - "50051:50051"
     depends_on:
@@ -26,17 +26,17 @@ services:
       - backend
 
   # Client API Service
-  client-api:
-    hostname: client-api
-    build: ./client-api
+  clientapi:
+    hostname: clientapi
+    build: ./clientapi
     ports:
       - "8080:8080"
     depends_on:
-      - port-domain-service
+      - portdomainservice
     environment:
-      PORT_DOMAIN_SERVICE_GRPC_URL: port-domain-service:50051    
+      PORT_DOMAIN_SERVICE_GRPC_URL: portdomainservice:50051    
       APP_ENV: "prod"
-      WAIT_HOSTS: port-domain-service:50051
+      WAIT_HOSTS: portdomainservice:50051
     networks: 
       - backend
 networks:

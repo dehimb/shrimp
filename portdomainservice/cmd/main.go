@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	ps "github.com/dehimb/shrimp/port-domain-service/internal/port-domain-service"
+	ps "github.com/dehimb/shrimp/portdomainservice/internal/portdomainservice"
 	"github.com/sirupsen/logrus"
 )
 

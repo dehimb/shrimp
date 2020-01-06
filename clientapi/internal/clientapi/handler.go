@@ -5,20 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"time"
 
 	pb "github.com/dehimb/shrimp/proto/port"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 type handler struct {
-	router               *mux.Router
-	logger               *logrus.Logger
-	grpcConnection       *grpc.ClientConn
-	portDomainGRPCClient pb.PortDomainServiceClient
+	router *mux.Router
+	logger *logrus.Logger
+	dialer Dialer
 }
 
 func (h *handler) initRouter(ctx context.Context) error {
@@ -29,20 +26,10 @@ func (h *handler) initRouter(ctx context.Context) error {
 	h.router.HandleFunc("/getPort/{portID}", h.getPort).Methods("GET")
 	// add default handler
 	h.router.PathPrefix("/").HandlerFunc(h.defaultHandler)
-	// Set up a connection to the server.
-	var err error
-	h.grpcConnection, err = grpc.Dial(os.Getenv("PORT_DOMAIN_SERVICE_GRPC_URL"), grpc.WithInsecure())
+	err := h.dialer.Dial(ctx)
 	if err != nil {
 		return err
 	}
-	// register grpc client
-	h.portDomainGRPCClient = pb.NewPortDomainServiceClient(h.grpcConnection)
-	// listen for context done and close connection
-	go func() {
-		<-ctx.Done()
-		h.grpcConnection.Close()
-	}()
-
 	return nil
 }
 
@@ -59,7 +46,7 @@ func (h *handler) ping(w http.ResponseWriter, r *http.Request) {
 func (h *handler) getPort(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	result, err := h.portDomainGRPCClient.GetPort(ctx, &pb.PortID{
+	result, err := h.dialer.GetClient().GetPort(ctx, &pb.PortID{
 		Id: mux.Vars(r)["portID"],
 	})
 	// TODO split grpc errors with no record found errors
