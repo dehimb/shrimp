@@ -1,3 +1,5 @@
+// Package portdomainservice used to work with remote databse exposing grpc interface
+// TODO Change using direct field names to data binding approach
 package portdomainservice
 
 import (
@@ -28,6 +30,7 @@ type PortService struct {
 	logger     *logrus.Logger
 }
 
+// AddPort used to store port information to database
 func (service *PortService) AddPort(ctx context.Context, port *pb.Port) (*pb.AddPortResponse, error) {
 	err := service.dbSession.Query(fmt.Sprintf(`
 		INSERT INTO %s.%s (ID, Name, Lat, Long, Country, Province, City, Timezone, Code, Alias, Region, Unlocs)
@@ -40,26 +43,48 @@ func (service *PortService) AddPort(ctx context.Context, port *pb.Port) (*pb.Add
 	return &pb.AddPortResponse{}, nil
 }
 
-func (p *PortService) GetPort(ctx context.Context, portID *pb.PortID) (*pb.GetPortResponse, error) {
-	log.Println("REQ!")
+// GetPort used to obtain information about port from database
+func (service *PortService) GetPort(ctx context.Context, portID *pb.PortID) (*pb.GetPortResponse, error) {
+	service.logger.Info("Req port with id ", portID.GetId())
+	var (
+		ID       string
+		Name     string
+		Lat      float32
+		Long     float32
+		Country  string
+		Province string
+		City     string
+		Timezone string
+		Code     string
+		Alias    []string
+		Region   []string
+		Unlocs   []string
+	)
+	err := service.dbSession.Query(fmt.Sprintf(`
+		SELECT ID, Name, Lat, Long, Country, Province, City, Timezone, Code, Alias, Region, Unlocs FROM %s.%s WHERE ID = ?
+	`, keyspace, portsTable), portID.GetId()).Scan(&ID, &Name, &Lat, &Long, &Country, &Province, &City, &Timezone, &Code, &Alias, &Region, &Unlocs)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.GetPortResponse{
 		Port: &pb.Port{
-			Id:       "0",
-			Name:     "OMG",
-			Lat:      0.0,
-			Long:     0.0,
-			Country:  "",
-			Province: "",
-			City:     "",
-			Timezone: "",
-			Code:     "",
-			Alias:    nil,
-			Region:   nil,
-			Unlocs:   nil,
+			Id:       ID,
+			Name:     Name,
+			Lat:      Lat,
+			Long:     Long,
+			Country:  Country,
+			Province: Province,
+			City:     City,
+			Timezone: Timezone,
+			Code:     Code,
+			Alias:    Alias,
+			Region:   Region,
+			Unlocs:   Unlocs,
 		},
 	}, nil
 }
 
+// Establish connection to database and start grpc server
 func StartPortDomainService(ctx context.Context, logger *logrus.Logger) {
 	service := &PortService{logger: logger}
 	// Lock service intil initialization done
@@ -89,6 +114,7 @@ func StartPortDomainService(ctx context.Context, logger *logrus.Logger) {
 	waitForShutdown(ctx, service, logger)
 }
 
+// Initialize database
 func (service *PortService) setupDatabase() {
 	cluster := gocql.NewCluster(os.Getenv("CASSANDRA_CLUSTER_URL"))
 	// TODO move credentials to secrets store

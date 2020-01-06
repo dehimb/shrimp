@@ -15,7 +15,6 @@ const (
 
 func StartServer(ctx context.Context, logger *logrus.Logger) {
 	handler := &handler{
-		ctx:    ctx,
 		router: mux.NewRouter(),
 		logger: logger,
 	}
@@ -26,7 +25,7 @@ func StartServer(ctx context.Context, logger *logrus.Logger) {
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
 	}
-	err := handler.initRouter()
+	err := handler.initRouter(ctx)
 	if err != nil {
 		logger.Fatal("Can't initialize router: ", err)
 	}
