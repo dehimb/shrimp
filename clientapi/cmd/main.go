@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/dehimb/shrimp/clientapi/internal/clientapi"
 	"github.com/dehimb/shrimp/clientapi/internal/portsloader"
@@ -34,8 +33,6 @@ func main() {
 		cancel()
 	}()
 
-	// TODO remove temporary fix
-	time.Sleep(2 * time.Second)
 	loadPortsData(ctx, logger)
 
 	// Start client api service

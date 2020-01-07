@@ -85,6 +85,7 @@ func (service *PortService) GetPort(ctx context.Context, portID *pb.PortID) (*pb
 // Establish connection to database and start grpc server
 func StartPortDomainService(ctx context.Context, logger *logrus.Logger) {
 	service := &PortService{logger: logger}
+	service.setupDatabase()
 	// Set-up our gRPC server.
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -105,7 +106,6 @@ func StartPortDomainService(ctx context.Context, logger *logrus.Logger) {
 	}()
 	log.Println("Started grpc on port:", port)
 
-	service.setupDatabase()
 	waitForShutdown(ctx, service, logger)
 }
 
